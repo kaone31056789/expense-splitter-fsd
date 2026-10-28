@@ -74,8 +74,11 @@ at [vercel.com/new](https://vercel.com/new) (no settings to change), or run `npx
 Run the Postman collection against the live site:
 `npx newman run postman/Expense-Splitter.postman_collection.json --env-var baseUrl=https://expense-splitter-fsd.vercel.app`
 
-> **Note:** on Vercel the API runs as a serverless function and keeps data in memory, so the online
-> demo can reset after a period of inactivity. Click **Load demo data** to fill it again.
+> **Database:** on Vercel the API runs as several serverless instances, so data is kept in an
+> **Upstash Redis** database (connected through the Vercel Marketplace). When the `KV_REST_API_URL` and
+> `KV_REST_API_TOKEN` environment variables are set, every request loads the latest data and every change
+> is saved before the response is sent (`server/src/repository/database.js`). Without them (for example
+> locally), the app keeps data in memory. The header badge shows which one is in use (`GET /api/health`).
 
 ## API
 

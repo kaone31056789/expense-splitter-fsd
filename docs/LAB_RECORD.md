@@ -3,6 +3,82 @@
 ## 1. Project folder structure
 
 ```
+expense-splitter/.agents/skills/upstash-ratelimit-js/SKILL.md
+expense-splitter/.agents/skills/upstash-ratelimit-js/algorithms.md
+expense-splitter/.agents/skills/upstash-ratelimit-js/features.md
+expense-splitter/.agents/skills/upstash-ratelimit-js/methods-getting-started.md
+expense-splitter/.agents/skills/upstash-ratelimit-js/pricing-cost.md
+expense-splitter/.agents/skills/upstash-ratelimit-js/traffic-protection.md
+expense-splitter/.agents/skills/upstash-redis-js/SKILL.md
+expense-splitter/.agents/skills/upstash-redis-js/advanced-features/auto-pipeline.md
+expense-splitter/.agents/skills/upstash-redis-js/advanced-features/pipeline-and-transactions.md
+expense-splitter/.agents/skills/upstash-redis-js/advanced-features/scripting.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/arrays.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/hashes.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/json.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/lists.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/sets.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/sorted-sets.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/streams.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/strings.md
+expense-splitter/.agents/skills/upstash-redis-js/data-structures/vector-indexes.md
+expense-splitter/.agents/skills/upstash-redis-js/migrations/from-ioredis.md
+expense-splitter/.agents/skills/upstash-redis-js/migrations/from-redis-node.md
+expense-splitter/.agents/skills/upstash-redis-js/patterns/caching.md
+expense-splitter/.agents/skills/upstash-redis-js/patterns/distributed-locks.md
+expense-splitter/.agents/skills/upstash-redis-js/patterns/leaderboard.md
+expense-splitter/.agents/skills/upstash-redis-js/patterns/rate-limiting.md
+expense-splitter/.agents/skills/upstash-redis-js/patterns/session-management.md
+expense-splitter/.agents/skills/upstash-redis-js/performance/batching-operations.md
+expense-splitter/.agents/skills/upstash-redis-js/performance/data-serialization.md
+expense-splitter/.agents/skills/upstash-redis-js/performance/error-handling.md
+expense-splitter/.agents/skills/upstash-redis-js/performance/pipeline-optimization.md
+expense-splitter/.agents/skills/upstash-redis-js/performance/redis-replicas.md
+expense-splitter/.agents/skills/upstash-redis-js/performance/ttl-expiration.md
+expense-splitter/.agents/skills/upstash-redis-js/search/adapters.md
+expense-splitter/.agents/skills/upstash-redis-js/search/commands/aggregating.md
+expense-splitter/.agents/skills/upstash-redis-js/search/commands/aliases.md
+expense-splitter/.agents/skills/upstash-redis-js/search/commands/index-management.md
+expense-splitter/.agents/skills/upstash-redis-js/search/commands/querying.md
+expense-splitter/.agents/skills/upstash-redis-js/search/overview.md
+expense-splitter/.claude/skills/upstash-ratelimit-js/SKILL.md
+expense-splitter/.claude/skills/upstash-ratelimit-js/algorithms.md
+expense-splitter/.claude/skills/upstash-ratelimit-js/features.md
+expense-splitter/.claude/skills/upstash-ratelimit-js/methods-getting-started.md
+expense-splitter/.claude/skills/upstash-ratelimit-js/pricing-cost.md
+expense-splitter/.claude/skills/upstash-ratelimit-js/traffic-protection.md
+expense-splitter/.claude/skills/upstash-redis-js/SKILL.md
+expense-splitter/.claude/skills/upstash-redis-js/advanced-features/auto-pipeline.md
+expense-splitter/.claude/skills/upstash-redis-js/advanced-features/pipeline-and-transactions.md
+expense-splitter/.claude/skills/upstash-redis-js/advanced-features/scripting.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/arrays.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/hashes.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/json.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/lists.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/sets.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/sorted-sets.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/streams.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/strings.md
+expense-splitter/.claude/skills/upstash-redis-js/data-structures/vector-indexes.md
+expense-splitter/.claude/skills/upstash-redis-js/migrations/from-ioredis.md
+expense-splitter/.claude/skills/upstash-redis-js/migrations/from-redis-node.md
+expense-splitter/.claude/skills/upstash-redis-js/patterns/caching.md
+expense-splitter/.claude/skills/upstash-redis-js/patterns/distributed-locks.md
+expense-splitter/.claude/skills/upstash-redis-js/patterns/leaderboard.md
+expense-splitter/.claude/skills/upstash-redis-js/patterns/rate-limiting.md
+expense-splitter/.claude/skills/upstash-redis-js/patterns/session-management.md
+expense-splitter/.claude/skills/upstash-redis-js/performance/batching-operations.md
+expense-splitter/.claude/skills/upstash-redis-js/performance/data-serialization.md
+expense-splitter/.claude/skills/upstash-redis-js/performance/error-handling.md
+expense-splitter/.claude/skills/upstash-redis-js/performance/pipeline-optimization.md
+expense-splitter/.claude/skills/upstash-redis-js/performance/redis-replicas.md
+expense-splitter/.claude/skills/upstash-redis-js/performance/ttl-expiration.md
+expense-splitter/.claude/skills/upstash-redis-js/search/adapters.md
+expense-splitter/.claude/skills/upstash-redis-js/search/commands/aggregating.md
+expense-splitter/.claude/skills/upstash-redis-js/search/commands/aliases.md
+expense-splitter/.claude/skills/upstash-redis-js/search/commands/index-management.md
+expense-splitter/.claude/skills/upstash-redis-js/search/commands/querying.md
+expense-splitter/.claude/skills/upstash-redis-js/search/overview.md
 expense-splitter/.gitattributes
 expense-splitter/.gitignore
 expense-splitter/README.md
@@ -64,6 +140,7 @@ expense-splitter/server/src/strategy/ExactSplitStrategy.js
 expense-splitter/server/src/strategy/PercentageSplitStrategy.js
 expense-splitter/server/src/strategy/SplitStrategy.js
 expense-splitter/server/test/app.test.js
+expense-splitter/skills-lock.json
 expense-splitter/vercel.json
 ```
 
@@ -3634,8 +3711,11 @@ at [vercel.com/new](https://vercel.com/new) (no settings to change), or run `npx
 Run the Postman collection against the live site:
 `npx newman run postman/Expense-Splitter.postman_collection.json --env-var baseUrl=https://expense-splitter-fsd.vercel.app`
 
-> **Note:** on Vercel the API runs as a serverless function and keeps data in memory, so the online
-> demo can reset after a period of inactivity. Click **Load demo data** to fill it again.
+> **Database:** on Vercel the API runs as several serverless instances, so data is kept in an
+> **Upstash Redis** database (connected through the Vercel Marketplace). When the `KV_REST_API_URL` and
+> `KV_REST_API_TOKEN` environment variables are set, every request loads the latest data and every change
+> is saved before the response is sent (`server/src/repository/database.js`). Without them (for example
+> locally), the app keeps data in memory. The header badge shows which one is in use (`GET /api/health`).
 
 ### API
 
