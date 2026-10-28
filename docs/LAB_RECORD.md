@@ -3373,6 +3373,8 @@ Expected summary: **41 requests, 59 assertions, 0 failed**.
 
 **Full Stack Development (FSD) project** · B.Tech IT, Semester 5
 
+**Live demo:** https://expense-splitter-fsd.vercel.app (click **Load demo data**)
+
 A full-stack web app for sharing group expenses, like Splitwise. You create users, put them in groups,
 record who paid for what and how it should be split, and the app works out who owes whom and the
 **fewest payments** needed to settle up. The frontend is a **React** single-page app and the backend is a
@@ -3433,11 +3435,15 @@ From the command line: `npx newman run postman/Expense-Splitter.postman_collecti
 
 #### Deploying on Vercel
 
-The repo is ready for Vercel: `vercel.json` builds the React app into `client/dist` and sends every
-`/api/*` request to `api/index.js`, which exports the same Express app.
+The app is deployed at **https://expense-splitter-fsd.vercel.app** and the Vercel project is connected
+to this GitHub repository, so every push to `main` redeploys it automatically.
 
-1. Go to [vercel.com/new](https://vercel.com/new) and import this GitHub repository (no settings to change), **or**
-2. run `npx vercel` in the project folder and then `npx vercel --prod`.
+`vercel.json` builds the React app into `client/dist` and sends every `/api/*` request to
+`api/index.js`, which exports the same Express app. To deploy your own copy, import the repository
+at [vercel.com/new](https://vercel.com/new) (no settings to change), or run `npx vercel --prod`.
+
+Run the Postman collection against the live site:
+`npx newman run postman/Expense-Splitter.postman_collection.json --env-var baseUrl=https://expense-splitter-fsd.vercel.app`
 
 > **Note:** on Vercel the API runs as a serverless function and keeps data in memory, so the online
 > demo can reset after a period of inactivity. Click **Load demo data** to fill it again.

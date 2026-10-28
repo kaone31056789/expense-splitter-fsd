@@ -12,7 +12,7 @@ Read this top to bottom once. Each answer has three parts:
 > "Our project is an **Expense Splitter**, like the Splitwise app. Friends add the bills they paid, choose how to split each bill (equally, by percentage, or exact amounts), and the app tells everyone **who owes whom** and the **fewest payments** needed to settle. People can then mark payments as done. It is a **full-stack JavaScript** app: the frontend is **React**, the backend is a **REST API in Node.js with Express**, we tested it with **node:test** and **Postman**, the code is on **GitHub** and it is deployed on **Vercel**."
 
 ### 2-minute demo script
-1. Run `npm run build` and `npm start`, then open **http://localhost:8080** (or the Vercel link).
+1. Run `npm run build` and `npm start`, then open **http://localhost:8080**, or open the live site **https://expense-splitter-fsd.vercel.app**.
 2. Click **Load demo data**: 4 friends, 1 group (Goa Trip), 3 bills.
 3. Point at **Balances**: "Green means they get money back, red means they owe."
 4. Point at **Settle up**: "Only 3 payments are needed. Diya pays Aman 400, Chirag 200, Bhavya 150."
