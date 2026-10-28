@@ -50,7 +50,9 @@ expense-splitter/server/src/observer/ExpenseEventPublisher.js
 expense-splitter/server/src/observer/ExpenseListener.js
 expense-splitter/server/src/observer/NotificationService.js
 expense-splitter/server/src/repository/Repository.js
+expense-splitter/server/src/repository/database.js
 expense-splitter/server/src/repository/repositories.js
+expense-splitter/server/src/repository/snapshot.js
 expense-splitter/server/src/service/BalanceService.js
 expense-splitter/server/src/service/ExpenseService.js
 expense-splitter/server/src/service/GroupService.js
@@ -193,6 +195,7 @@ import { groupController } from './controller/GroupController.js';
 import { paymentController } from './controller/PaymentController.js';
 import { userController } from './controller/UserController.js';
 import { globalExceptionHandler, noEndpoint } from './exception/GlobalExceptionHandler.js';
+import { databaseMiddleware, databaseStatus } from './repository/database.js';
 
 /**
  * Builds the Express app: JSON parsing, the REST controllers under /api,
@@ -202,6 +205,12 @@ export function createApp() {
   const app = express();
   app.use(express.json());
 
+  // GET /api/health -> which database the API is using and whether it is reachable
+  app.get('/api/health', async (req, res) => {
+    res.json({ status: 'ok', ...(await databaseStatus()) });
+  });
+
+  app.use('/api', databaseMiddleware);
   app.use('/api', userController, groupController, expenseController, paymentController);
   app.use('/api', noEndpoint);
 
@@ -963,6 +972,83 @@ export class NotificationService extends ExpenseListener {
 }
 ```
 
+### server/src/repository/database.js
+
+```javascript
+import { dump, load } from './snapshot.js';
+
+/**
+ * Optional Redis database (Upstash, connected through Vercel).
+ * Without it the app keeps data in memory only. With it, every request first loads the
+ * latest data and every change is saved before the response is sent, so all server
+ * instances (Vercel runs several) see the same data and nothing is lost on restart.
+ */
+const URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const KEY = 'expense-splitter:db';
+
+export const databaseEnabled = Boolean(URL && TOKEN);
+let localVersion = 0;
+
+async function redis(...command) {
+  const res = await fetch(URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(command)
+  });
+  if (!res.ok) throw new Error(`Redis error ${res.status}`);
+  return (await res.json()).result;
+}
+
+async function pull() {
+  const text = await redis('GET', KEY);
+  if (!text) return;
+  const stored = JSON.parse(text);
+  if (stored.version !== localVersion) {
+    load(stored.data);
+    localVersion = stored.version;
+  }
+}
+
+async function push() {
+  localVersion = Date.now() + Math.random();
+  await redis('SET', KEY, JSON.stringify({ version: localVersion, data: dump() }));
+}
+
+// One request at a time per instance, so a load never lands in the middle of a change
+let queue = Promise.resolve();
+
+export function databaseMiddleware(req, res, next) {
+  if (!databaseEnabled) return next();
+  const mutating = req.method !== 'GET';
+  queue = queue.then(() => new Promise((release) => {
+    res.on('finish', release);
+    res.on('close', release);
+    if (mutating) {
+      // Save the changes before the response leaves, so the next request sees them
+      const end = res.end.bind(res);
+      res.end = (...args) => {
+        const ok = res.statusCode < 400;
+        (ok ? push() : Promise.resolve()).catch((err) => console.error('Database save failed', err))
+          .finally(() => end(...args));
+        return res;
+      };
+    }
+    pull().then(() => next(), next);
+  }));
+}
+
+export async function databaseStatus() {
+  if (!databaseEnabled) return { database: 'In-memory (no database configured)', connected: false };
+  try {
+    await redis('PING');
+    return { database: 'Upstash Redis', connected: true };
+  } catch {
+    return { database: 'Upstash Redis', connected: false };
+  }
+}
+```
+
 ### server/src/repository/repositories.js
 
 ```javascript
@@ -1086,6 +1172,16 @@ export class Repository {
   count() {
     return this.#rows.size;
   }
+
+  // Used by the database snapshot: replace every row and the id counter
+  replaceAll(rows, nextId) {
+    this.#rows = new Map(rows.map((r) => [r.id, r]));
+    this.#nextId = nextId;
+  }
+
+  get nextId() {
+    return this.#nextId;
+  }
 }
 
 /**
@@ -1106,6 +1202,81 @@ export function transactional(fn) {
   } finally {
     currentTransaction = null;
   }
+}
+```
+
+### server/src/repository/snapshot.js
+
+```javascript
+import { ActivityLog } from '../entity/ActivityLog.js';
+import { Expense } from '../entity/Expense.js';
+import { ExpenseShare } from '../entity/ExpenseShare.js';
+import { Group } from '../entity/Group.js';
+import { Payment } from '../entity/Payment.js';
+import { User } from '../entity/User.js';
+import {
+  activityLogRepository, expenseRepository, expenseShareRepository, groupRepository, paymentRepository, userRepository
+} from './repositories.js';
+
+/**
+ * Turns the whole object graph into plain JSON (references become ids) and back again,
+ * so it can be stored in the database as one document.
+ */
+export function dump() {
+  return {
+    users: { nextId: userRepository.nextId, rows: userRepository.findAll().map((u) => u.toJSON()) },
+    groups: {
+      nextId: groupRepository.nextId,
+      rows: groupRepository.findAll().map((g) => ({ id: g.id, name: g.name, memberIds: [...g.members].map((m) => m.id) }))
+    },
+    expenses: {
+      nextId: expenseRepository.nextId,
+      rows: expenseRepository.findAll().map((e) => ({
+        id: e.id, description: e.description, amount: e.amount, splitType: e.splitType, createdAt: e.createdAt,
+        paidById: e.paidBy.id, groupId: e.groupId,
+        shares: e.shares.map((s) => ({ id: s.id, userId: s.user.id, shareAmount: s.shareAmount }))
+      }))
+    },
+    shares: { nextId: expenseShareRepository.nextId },
+    payments: {
+      nextId: paymentRepository.nextId,
+      rows: paymentRepository.findAll().map((p) => ({
+        id: p.id, groupId: p.groupId, fromUserId: p.fromUser.id, toUserId: p.toUser.id, amount: p.amount, createdAt: p.createdAt
+      }))
+    },
+    logs: { nextId: activityLogRepository.nextId, rows: activityLogRepository.findAll().map((a) => ({ ...a })) }
+  };
+}
+
+export function load(data) {
+  const users = new Map(data.users.rows.map((r) => [r.id, Object.assign(new User(r.name, r.email), { id: r.id })]));
+  const groups = new Map(data.groups.rows.map((r) => {
+    const g = Object.assign(new Group(r.name), { id: r.id });
+    r.memberIds.forEach((id) => g.addMember(users.get(id)));
+    return [r.id, g];
+  }));
+  const shares = [];
+  const expenses = data.expenses.rows.map((r) => {
+    const e = Object.assign(new Expense(r.description, r.amount, r.splitType, users.get(r.paidById), groups.get(r.groupId)),
+      { id: r.id, createdAt: r.createdAt });
+    r.shares.forEach((s) => {
+      const share = Object.assign(new ExpenseShare(users.get(s.userId), s.shareAmount), { id: s.id });
+      e.addShare(share);
+      shares.push(share);
+    });
+    return e;
+  });
+  const payments = data.payments.rows.map((r) => Object.assign(
+    new Payment(groups.get(r.groupId), users.get(r.fromUserId), users.get(r.toUserId), r.amount),
+    { id: r.id, createdAt: r.createdAt }));
+  const logs = data.logs.rows.map((r) => Object.assign(new ActivityLog(r.groupId, r.message), r));
+
+  userRepository.replaceAll([...users.values()], data.users.nextId);
+  groupRepository.replaceAll([...groups.values()], data.groups.nextId);
+  expenseRepository.replaceAll(expenses, data.expenses.nextId);
+  expenseShareRepository.replaceAll(shares, data.shares.nextId);
+  paymentRepository.replaceAll(payments, data.payments.nextId);
+  activityLogRepository.replaceAll(logs, data.logs.nextId);
 }
 ```
 
@@ -2085,6 +2256,12 @@ export default function App() {
     loadAll();
   }, [loadAll]);
 
+  // Which database the API uses (shown in the header)
+  const [db, setDb] = useState(null);
+  useEffect(() => {
+    api('GET', '/api/health').then(setDb).catch(() => setDb({ database: 'API not reachable', connected: false }));
+  }, []);
+
   const currentGroup = groups.find((g) => g.id === groupId);
 
   /* ===================== sidebar actions ===================== */
@@ -2235,6 +2412,11 @@ export default function App() {
           <p>Splitwise-style shared ledger · React + Express · Exp 3.3</p>
         </div>
         <div className="mast-actions">
+          {db && (
+            <span className={`db-pill ${db.connected ? 'on' : 'off'}`} title="GET /api/health">
+              <span className="dot" />{db.connected ? `Database: ${db.database} · connected` : db.database}
+            </span>
+          )}
           <button className="btn green" disabled={demoBusy} onClick={loadDemo}
             title="Creates 4 users, a group and 3 expenses through the REST API">Load demo data</button>
           <button className="btn ghost" aria-label="Toggle colour theme" onClick={toggleTheme}>Theme</button>
@@ -2877,6 +3059,13 @@ button, input, select { font: inherit; color: inherit; }
 .brand h1 em { font-style: italic; font-weight: 400; color: var(--accent); }
 .brand p { margin: 6px 0 0; color: var(--ink-2); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
 .mast-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.db-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px;
+  font-family: var(--mono); font-size: 11px; border: 1px solid var(--rule-strong); color: var(--ink-2);
+}
+.db-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.db-pill.on { border-color: var(--gets); color: var(--gets); background: var(--gets-soft); }
+.db-pill.on .dot { background: var(--gets); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gets) 25%, transparent); }
 
 .btn {
   border: 1.5px solid var(--ink); background: transparent; padding: 8px 14px; border-radius: 3px;

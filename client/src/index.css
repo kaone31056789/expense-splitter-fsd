@@ -72,6 +72,13 @@ button, input, select { font: inherit; color: inherit; }
 .brand h1 em { font-style: italic; font-weight: 400; color: var(--accent); }
 .brand p { margin: 6px 0 0; color: var(--ink-2); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
 .mast-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.db-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px;
+  font-family: var(--mono); font-size: 11px; border: 1px solid var(--rule-strong); color: var(--ink-2);
+}
+.db-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.db-pill.on { border-color: var(--gets); color: var(--gets); background: var(--gets-soft); }
+.db-pill.on .dot { background: var(--gets); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gets) 25%, transparent); }
 
 .btn {
   border: 1.5px solid var(--ink); background: transparent; padding: 8px 14px; border-radius: 3px;

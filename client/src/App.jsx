@@ -86,6 +86,12 @@ export default function App() {
     loadAll();
   }, [loadAll]);
 
+  // Which database the API uses (shown in the header)
+  const [db, setDb] = useState(null);
+  useEffect(() => {
+    api('GET', '/api/health').then(setDb).catch(() => setDb({ database: 'API not reachable', connected: false }));
+  }, []);
+
   const currentGroup = groups.find((g) => g.id === groupId);
 
   /* ===================== sidebar actions ===================== */
@@ -236,6 +242,11 @@ export default function App() {
           <p>Splitwise-style shared ledger · React + Express · Exp 3.3</p>
         </div>
         <div className="mast-actions">
+          {db && (
+            <span className={`db-pill ${db.connected ? 'on' : 'off'}`} title="GET /api/health">
+              <span className="dot" />{db.connected ? `Database: ${db.database} · connected` : db.database}
+            </span>
+          )}
           <button className="btn green" disabled={demoBusy} onClick={loadDemo}
             title="Creates 4 users, a group and 3 expenses through the REST API">Load demo data</button>
           <button className="btn ghost" aria-label="Toggle colour theme" onClick={toggleTheme}>Theme</button>

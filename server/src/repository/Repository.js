@@ -43,6 +43,16 @@ export class Repository {
   count() {
     return this.#rows.size;
   }
+
+  // Used by the database snapshot: replace every row and the id counter
+  replaceAll(rows, nextId) {
+    this.#rows = new Map(rows.map((r) => [r.id, r]));
+    this.#nextId = nextId;
+  }
+
+  get nextId() {
+    return this.#nextId;
+  }
 }
 
 /**

@@ -7,6 +7,7 @@ import { groupController } from './controller/GroupController.js';
 import { paymentController } from './controller/PaymentController.js';
 import { userController } from './controller/UserController.js';
 import { globalExceptionHandler, noEndpoint } from './exception/GlobalExceptionHandler.js';
+import { databaseMiddleware, databaseStatus } from './repository/database.js';
 
 /**
  * Builds the Express app: JSON parsing, the REST controllers under /api,
@@ -16,6 +17,12 @@ export function createApp() {
   const app = express();
   app.use(express.json());
 
+  // GET /api/health -> which database the API is using and whether it is reachable
+  app.get('/api/health', async (req, res) => {
+    res.json({ status: 'ok', ...(await databaseStatus()) });
+  });
+
+  app.use('/api', databaseMiddleware);
   app.use('/api', userController, groupController, expenseController, paymentController);
   app.use('/api', noEndpoint);
 
