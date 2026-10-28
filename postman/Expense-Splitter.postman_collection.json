@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Experiment 3.3 - Expense Splitter (Spring Boot)",
-    "description": "Run the folders top to bottom (or use Runner). IDs returned by the API are saved into collection variables automatically, so each request uses the right userId / groupId / expenseId. Start the app first: mvnw spring-boot:run",
+    "name": "Expense Splitter (React + Node.js/Express)",
+    "description": "Run the folders top to bottom (or use Runner). IDs returned by the API are saved into collection variables automatically, so each request uses the right userId / groupId / expenseId. Start the server first: npm start (http://localhost:8080)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

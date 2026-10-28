@@ -1,0 +1,17 @@
+{
+  "name": "expense-splitter-fsd",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Splitwise-style Expense Splitter - React + Node.js/Express (Full Stack Development project)",
+  "type": "module",
+  "scripts": {
+    "setup": "npm install --prefix server && npm install --prefix client",
+    "build": "npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "dev": "concurrently -n server,client -c green,blue \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "test": "npm test --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

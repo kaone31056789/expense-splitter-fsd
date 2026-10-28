@@ -1,78 +1,86 @@
-# Expense Splitter (Splitwise-style) — Spring Boot
+# Expense Splitter (Splitwise-style) — React + Node.js/Express
 
-**Project Based Learning in Java, Experiment 3.3** · B.Tech IT, Semester 5
+**Full Stack Development (FSD) project** · B.Tech IT, Semester 5
 
-A REST backend for sharing group expenses, like Splitwise. You create users, put them in groups,
+A full-stack web app for sharing group expenses, like Splitwise. You create users, put them in groups,
 record who paid for what and how it should be split, and the app works out who owes whom and the
-**fewest payments** needed to settle up. A small web interface (served by the same app) and a
-Postman collection are included for demos.
+**fewest payments** needed to settle up. The frontend is a **React** single-page app and the backend is a
+**Node.js + Express** REST API. A Postman collection is included for API demos.
 
 ## Features
 
 | Feature | How it is built |
 |---|---|
-| Users and groups (many-to-many) | JPA `@ManyToMany` with a `group_members` join table |
-| Expenses with 3 split types | **Strategy pattern**: `EQUAL`, `PERCENTAGE`, `EXACT` beans injected as `Map<String, SplitStrategy>` and chosen at runtime from the request body |
-| Net balance per member | Java Streams: `groupingBy` + `summingDouble` |
-| Settlement | Greedy algorithm with two `PriorityQueue` max-heaps (creditors and debtors): at most n − 1 payments, usually the minimum |
+| Users and groups (many-to-many) | `Group.members` and `User.groups` sets kept in sync by `group.addMember(user)` |
+| Expenses with 3 split types | **Strategy pattern**: `EqualSplitStrategy`, `PercentageSplitStrategy`, `ExactSplitStrategy` kept in a `Map` and chosen at runtime from the request body |
+| Net balance per member | Array methods: `reduce` into a `Map`, `flatMap` over the shares |
+| Settlement | Greedy algorithm with two binary-heap `PriorityQueue`s (creditors and debtors): at most n − 1 payments, usually the minimum |
 | Settle up | "Settle" button records a payment (full or partial); balances and suggestions update; payments can be undone |
-| Activity log and notifications | **Observer pattern**: `AuditLogger` saves to the DB, `NotificationService` prints to the console |
+| Activity log and notifications | **Observer pattern**: `AuditLogger` saves to the store, `NotificationService` prints to the console |
 | App settings (currency, rounding) | **Singleton pattern**: `ConfigService.getInstance()` |
-| All-or-nothing save | `@Transactional` on `addExpense`: an invalid split rolls back the expense too |
-| Clean errors | `@ControllerAdvice` + `@ExceptionHandler` → `{timestamp, status, error, message}` |
-| Money rounding | `BigDecimal` with `HALF_UP` to 2 decimals; paisa left over from rounding goes to one participant so shares always add up exactly |
+| All-or-nothing save | `transactional()` keeps an undo log: an invalid split rolls back the expense too |
+| Clean errors | One Express error middleware → `{timestamp, status, error, message}`; also 405 for wrong methods and 400 for bad ids / bad JSON |
+| Money rounding | Half-up rounding to 2 decimals on the decimal text (so 1.005 → 1.01); paisa left over from rounding goes to one participant so shares always add up exactly |
+| React UI | Live split meter, diverging balance bars, settlement slip, light/dark theme and an **API console** that shows every REST call |
 
 ## Tech stack
 
-Java 17 · Spring Boot 3.3.5 · Spring Web · Spring Data JPA / Hibernate · H2 (in-memory; MySQL config included in comments) · Maven · Postman. No Lombok.
+**Frontend:** React 18 · Vite 5 · plain CSS
+**Backend:** Node.js (18+) · Express 4 · ES modules · in-memory repositories (data resets when the server restarts)
+**Testing:** `node:test` (built-in) · Postman / Newman
+**Deployment:** GitHub · Vercel
 
 ## How to run
 
-You only need **Java 17**. Maven is not required because the project includes the Maven Wrapper.
+You only need **Node.js 18 or newer**.
 
 ```bash
-# Windows
-mvnw.cmd spring-boot:run
-
-# macOS / Linux
-./mvnw spring-boot:run
+npm run setup     # installs server and client dependencies
+npm run build     # builds the React app into client/dist
+npm start         # starts Express on http://localhost:8080 (API + React app)
 ```
 
-Then open:
+Open **http://localhost:8080** and click **Load demo data**.
 
-| URL | What |
-|---|---|
-| http://localhost:8080/ | Demo web interface (click **Load demo data**) |
-| http://localhost:8080/h2-console | H2 database console. JDBC URL `jdbc:h2:mem:expensedb`, user `sa`, no password |
+For development with hot reload (React on :5173, API on :8080):
 
-Run the automated test: `mvnw.cmd test`
+```bash
+npm install       # once, installs "concurrently" at the root
+npm run dev
+```
 
-You can also open the folder in IntelliJ IDEA or Eclipse as a Maven project and run `ExpenseSplitterApplication`.
+Run the automated tests: `npm test`
 
 ### Using Postman
 
 1. In Postman click **Import** and choose `postman/Expense-Splitter.postman_collection.json`.
-2. Start the app.
+2. Start the server (`npm start`).
 3. Run the folders in order (1 → 8), or click the collection → **Run** to run everything (41 requests, 59 checks).
    Folder 8 deletes everything the run created, so you can run it again and again.
-   IDs from each response are saved automatically, and every request has tests that check the status code and values.
 
-### Switching to MySQL
+From the command line: `npx newman run postman/Expense-Splitter.postman_collection.json`
 
-1. Uncomment `mysql-connector-j` in `pom.xml`.
-2. Run `CREATE DATABASE expensedb;` in MySQL.
-3. In `application.properties`, comment out the H2 block and uncomment the MySQL block (set your password).
+### Deploying on Vercel
+
+The repo is ready for Vercel: `vercel.json` builds the React app into `client/dist` and sends every
+`/api/*` request to `api/index.js`, which exports the same Express app.
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import this GitHub repository (no settings to change), **or**
+2. run `npx vercel` in the project folder and then `npx vercel --prod`.
+
+> **Note:** on Vercel the API runs as a serverless function and keeps data in memory, so the online
+> demo can reset after a period of inactivity. Click **Load demo data** to fill it again.
 
 ## API
 
 | Method | Endpoint | Purpose | Success | Errors |
 |---|---|---|---|---|
 | POST | `/api/users` | Create a user `{name, email}` | 201 | 400 |
-| GET | `/api/users` | List users | 200 | |
+| GET | `/api/users`, `/api/users/{userId}` | List users / get one | 200 | 404 |
 | DELETE | `/api/users/{userId}` | Delete a user (refused while they are part of expenses) | 204 | 404, 409 |
-| DELETE | `/api/groups/{groupId}` | Delete a group with its expenses and activity log | 204 | 404 |
 | POST | `/api/groups` | Create a group `{name}` | 201 | 400 |
 | GET | `/api/groups`, `/api/groups/{id}` | List groups / get one | 200 | 404 |
+| DELETE | `/api/groups/{groupId}` | Delete a group with its expenses and activity log | 204 | 404 |
 | POST | `/api/groups/{groupId}/members/{userId}` | Add a member | 200 | 400, 404 |
 | POST | `/api/groups/{groupId}/expenses` | Add an expense | 201 | 400, 404 |
 | GET | `/api/groups/{groupId}/expenses?userId=` | List expenses (optional filter by user) | 200 | 404 |
@@ -107,21 +115,28 @@ For `EQUAL`, leave out `value`. For `EXACT`, `value` is the amount in rupees.
 
 ```
 expense-splitter/
-├── pom.xml, mvnw, mvnw.cmd, .mvn/
-├── postman/Expense-Splitter.postman_collection.json
-├── docs/  (Postman test guide, viva cheat-sheet, lab record)
-└── src/
-    ├── main/java/com/expensesplitter/
-    │   ├── ExpenseSplitterApplication.java
-    │   ├── config/      ConfigService (Singleton)
-    │   ├── controller/  UserController, GroupController, ExpenseController
-    │   ├── dto/         ExpenseRequest, SplitRequest, BalanceResponse, SettlementResponse, ErrorResponse
-    │   ├── entity/      User, Group, Expense, ExpenseShare, ActivityLog
-    │   ├── exception/   custom exceptions + GlobalExceptionHandler
-    │   ├── observer/    ExpenseListener, ExpenseEventPublisher, AuditLogger, NotificationService
-    │   ├── repository/  JpaRepository interfaces
-    │   ├── service/     UserService, GroupService, ExpenseService, BalanceService
-    │   └── strategy/    SplitStrategy + Equal / Percentage / Exact
-    ├── main/resources/  application.properties, static/index.html
-    └── test/java/...    ExpenseSplitterApplicationTests
+├── package.json          root scripts: setup, build, start, dev, test
+├── vercel.json           Vercel build + /api rewrite
+├── api/index.js          Vercel entry point (exports the Express app)
+├── server/               Node.js + Express backend
+│   ├── src/
+│   │   ├── index.js          starts the server (PORT, default 8080)
+│   │   ├── app.js            Express app: JSON, routers, errors, serves client/dist
+│   │   ├── config/           ConfigService (Singleton)
+│   │   ├── controller/       User, Group, Expense, Payment routers + id parsing
+│   │   ├── dto/              request parsers (ExpenseRequest, PaymentRequest)
+│   │   ├── entity/           User, Group, Expense, ExpenseShare, Payment, ActivityLog
+│   │   ├── exception/        custom errors + GlobalExceptionHandler middleware
+│   │   ├── observer/         ExpenseListener, ExpenseEventPublisher, AuditLogger, NotificationService
+│   │   ├── repository/       Repository (in-memory table + transactional()) and the 6 repositories
+│   │   ├── service/          User, Group, Expense, Balance, Payment services + PriorityQueue
+│   │   └── strategy/         SplitStrategy + Equal / Percentage / Exact
+│   └── test/app.test.js  node:test unit + HTTP tests
+├── client/               React frontend (Vite)
+│   ├── index.html
+│   └── src/
+│       ├── main.jsx, App.jsx, api.js, format.js, index.css
+│       └── components/   Sidebar (People, Groups), ExpenseForm, GroupPanel, ApiConsole
+├── postman/              Postman collection (41 requests, 59 checks)
+└── docs/                 project report (DOCX + PDF), lab record, Postman guide, viva cheat-sheet
 ```

@@ -1,5 +1,4 @@
 * text=auto
-mvnw text eol=lf
-*.cmd text eol=crlf
 *.docx binary
 *.pdf binary
+*.png binary

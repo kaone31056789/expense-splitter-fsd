@@ -1,6 +1,6 @@
 # Postman test sequence
 
-Base URL: `http://localhost:8080`. For every POST with a body, set the header `Content-Type: application/json`
+Base URL: `http://localhost:8080` (start the Express server with `npm start`). For every POST with a body, set the header `Content-Type: application/json`
 (Body → raw → JSON in Postman).
 
 The ready-made collection `postman/Expense-Splitter.postman_collection.json` contains all of these
@@ -72,7 +72,7 @@ Expected **200 OK** after the last one:
 }
 ```
 
-(The order of members may vary because a `Set` is used.)
+(Members are listed in the order they were added.)
 
 ## 4. Expense 1: EQUAL
 
@@ -94,21 +94,21 @@ Expected **201 Created**:
 {
   "id": 1,
   "description": "Dinner",
-  "amount": 1200.0,
+  "amount": 1200,
   "splitType": "EQUAL",
-  "createdAt": "2026-10-22T11:59:31.564652",
+  "createdAt": "2026-10-28T12:26:41.392",
   "paidBy": { "id": 1, "name": "Aman", "email": "aman@demo.com" },
   "shares": [
-    { "id": 1, "user": { "id": 1, "name": "Aman", "email": "aman@demo.com" }, "shareAmount": 300.0 },
-    { "id": 2, "user": { "id": 2, "name": "Bhavya", "email": "bhavya@demo.com" }, "shareAmount": 300.0 },
-    { "id": 3, "user": { "id": 3, "name": "Chirag", "email": "chirag@demo.com" }, "shareAmount": 300.0 },
-    { "id": 4, "user": { "id": 4, "name": "Diya", "email": "diya@demo.com" }, "shareAmount": 300.0 }
+    { "id": 1, "user": { "id": 1, "name": "Aman", "email": "aman@demo.com" }, "shareAmount": 300 },
+    { "id": 2, "user": { "id": 2, "name": "Bhavya", "email": "bhavya@demo.com" }, "shareAmount": 300 },
+    { "id": 3, "user": { "id": 3, "name": "Chirag", "email": "chirag@demo.com" }, "shareAmount": 300 },
+    { "id": 4, "user": { "id": 4, "name": "Diya", "email": "diya@demo.com" }, "shareAmount": 300 }
   ],
   "groupId": 1
 }
 ```
 
-The app console also prints: `[NOTIFICATION] Aman added expense Dinner (Rs 1200.00)`
+The server terminal also prints: `[NOTIFICATION] Aman added expense Dinner (Rs 1200.00)`
 
 ## 5. Expense 2: PERCENTAGE
 
@@ -154,10 +154,10 @@ Expected **201 Created**, with shares of 250, 300, 200 and 250.
 
 ```json
 [
-  { "userId": 1, "name": "Aman",   "balance": 400.0,  "status": "gets back Rs 400.00" },
-  { "userId": 3, "name": "Chirag", "balance": 200.0,  "status": "gets back Rs 200.00" },
-  { "userId": 2, "name": "Bhavya", "balance": 150.0,  "status": "gets back Rs 150.00" },
-  { "userId": 4, "name": "Diya",   "balance": -750.0, "status": "owes Rs 750.00" }
+  { "userId": 1, "name": "Aman",   "balance": 400,    "status": "gets back Rs 400.00" },
+  { "userId": 3, "name": "Chirag", "balance": 200,    "status": "gets back Rs 200.00" },
+  { "userId": 2, "name": "Bhavya", "balance": 150,    "status": "gets back Rs 150.00" },
+  { "userId": 4, "name": "Diya",   "balance": -750,   "status": "owes Rs 750.00" }
 ]
 ```
 
@@ -167,9 +167,9 @@ Expected **201 Created**, with shares of 250, 300, 200 and 250.
 
 ```json
 [
-  { "fromUserId": 4, "fromUser": "Diya", "toUserId": 1, "toUser": "Aman",   "amount": 400.0, "message": "Diya pays Aman Rs 400.00" },
-  { "fromUserId": 4, "fromUser": "Diya", "toUserId": 3, "toUser": "Chirag", "amount": 200.0, "message": "Diya pays Chirag Rs 200.00" },
-  { "fromUserId": 4, "fromUser": "Diya", "toUserId": 2, "toUser": "Bhavya", "amount": 150.0, "message": "Diya pays Bhavya Rs 150.00" }
+  { "fromUserId": 4, "fromUser": "Diya", "toUserId": 1, "toUser": "Aman",   "amount": 400, "message": "Diya pays Aman Rs 400.00" },
+  { "fromUserId": 4, "fromUser": "Diya", "toUserId": 3, "toUser": "Chirag", "amount": 200, "message": "Diya pays Chirag Rs 200.00" },
+  { "fromUserId": 4, "fromUser": "Diya", "toUserId": 2, "toUser": "Bhavya", "amount": 150, "message": "Diya pays Bhavya Rs 150.00" }
 ]
 ```
 
@@ -183,24 +183,27 @@ Three payments for four people, which is the minimum (n − 1).
 
 | Request | Expected |
 |---|---|
-| Percentages adding up to 90 | **400** `"Percentages must add up to 100, but got 90.0"` |
+| Percentages adding up to 90 | **400** `"Percentages must add up to 100, but got 90"` |
 | EXACT amounts not matching the total | **400** `"Exact amounts add up to Rs 100.00 but the expense is Rs 500.00"` |
 | `"splitType": "RANDOM"` | **400** `"Unknown split type 'RANDOM'. Use one of [EQUAL, EXACT, PERCENTAGE]"` |
 | Same email twice | **400** `"Email already registered: aman@demo.com"` |
 | `GET /api/groups/99/balances` | **404** `"Group not found with id 99"` |
 | `POST /api/groups/1/members/42` | **404** `"User not found with id 42"` |
+| `GET /api/expenses/1` (wrong method) | **405** `"GET is not supported here. Allowed: [DELETE]"` |
+| `GET /api/groups/abc/balances` | **400** `"Invalid value 'abc' for groupId"` |
+| Broken JSON body | **400** `"Request body is missing or is not valid JSON"` |
 
 Error body format:
 
 ```json
-{ "timestamp": "2026-10-22T12:00:27.92", "status": 400, "error": "Bad Request", "message": "Percentages must add up to 100, but got 90.0" }
+{ "timestamp": "2026-10-28T12:26:41.392", "status": 400, "error": "Bad Request", "message": "Percentages must add up to 100, but got 90" }
 ```
 
-After a 400 on an expense, call `GET /api/groups/1/expenses`: no half-saved expense appears, because `@Transactional` rolled it back.
+After a 400 on an expense, call `GET /api/groups/1/expenses`: no half-saved expense appears, because `transactional()` rolled it back.
 
 ## 11. Delete
 
-`DELETE /api/expenses/3` → **204 No Content** (its shares are deleted too, because of the cascade).
+`DELETE /api/expenses/3` → **204 No Content** (its shares are deleted too).
 Run it again → **404** `"Expense not found with id 3"`.
 
 Settlements are now recalculated:
@@ -225,8 +228,17 @@ Settlements are now recalculated:
 
 | Request | Expected |
 |---|---|
-| `DELETE /api/users/1` while Aman is still in expenses | **409 Conflict** `"Aman is still part of expenses. Delete those expenses (or the whole group) first."` |
+| `DELETE /api/users/1` while Aman is still in expenses | **409 Conflict** `"Aman is still part of expenses or payments. Delete those (or the whole group) first."` |
 | `DELETE /api/groups/1` | **204** (its expenses, shares, member links and activity log are deleted too) |
 | `GET /api/groups/1` | **404** `"Group not found with id 1"` |
 | `DELETE /api/users/1` (now that the group is gone) | **204** |
 | `DELETE /api/users/1` again | **404** `"User not found with id 1"` |
+
+## Running everything from the command line
+
+```bash
+npm start                                                     # terminal 1
+npx newman run postman/Expense-Splitter.postman_collection.json   # terminal 2
+```
+
+Expected summary: **41 requests, 59 assertions, 0 failed**.
